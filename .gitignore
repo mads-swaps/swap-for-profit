@@ -1,5 +1,6 @@
 *hidden.py
 fetch_data/temp/*
+fetch_data/*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
