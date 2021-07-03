@@ -6,6 +6,7 @@ CREATE TABLE public.pairs (
 	CONSTRAINT pairs_pk PRIMARY KEY (id)
 );
 
+
 CREATE TABLE public.candlestick_15m (
 	pair_id int2 NOT NULL,
 	open_time timestamp NOT NULL,
@@ -14,7 +15,7 @@ CREATE TABLE public.candlestick_15m (
 	low numeric(20, 8) NOT NULL,
 	"close" numeric(20, 8) NOT NULL,
 	volume numeric(20, 8) NOT NULL,
-	close_time timestamp NOT NULL,
+	close_time timestamp NULL,
 	quote_asset_volume numeric(20, 8) NOT NULL,
 	number_of_trades int4 NOT NULL,
 	taker_buy_base_asset_volume numeric(20, 8) NOT NULL,
@@ -24,3 +25,17 @@ CREATE TABLE public.candlestick_15m (
 	CONSTRAINT candlestick_15m_fk FOREIGN KEY (pair_id) REFERENCES public.pairs(id)
 );
 CREATE UNIQUE INDEX candlestick_15m_pair_id_idx ON public.candlestick_15m USING btree (pair_id, open_time);
+
+CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER set_timestamp
+BEFORE UPDATE ON candlestick_15m
+FOR EACH ROW
+EXECUTE PROCEDURE trigger_set_timestamp();
