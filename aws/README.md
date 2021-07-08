@@ -35,18 +35,4 @@ SecretString from the System Manager Parameter Store is one of many way to store
 
 Lambda is used to fetch the latest klines data from Binance and store it in the database.  We use Lambda instead of EC2 due to very sparse computational needs (<1 second every 15 minutes).
 
-1. Go to Lambda, create function from scratch
-    1. Runtime: Python 3.8
-    2. Permissions -> Execution role: Create a new role with basic Lambda permissions
-    3. Advanced Settings -> Network -> VPC: Selecting default VPC is OK here
-2. Copy the code from `lambda_function.py` and replace it
-3. Copy these files https://github.com/jkehler/awslambda-psycopg2/tree/master/psycopg2-3.8 to `psycopg2` folder.
-4. Other configurations:
-    1. Increase timeout to 10 seconds, as 3 seconds may be too short
-    2. Environment variables: `pg_host`, `pg_db`, `pg_user`
-    3. VPC changes to allow connection to internet: https://blog.theodo.com/2020/01/internet-access-to-lambda-in-vpc/
-    4. Add `ssm:GetParameter` policy to the created Lambda role to access Parameter Store
-5. Setup scheduled triggers for automatic data fetching
-    1. Go to AWS EventBridge -> Rules
-    2. Create Rule, Schedule with cron expression `1-59/15 * * * ? *`
-    3. Select the Lambda function as target
+We are using the AWS Serverless Application Model (SAM) to deploy the lambda functions.  Look in `sam` for `README`, code, and references.

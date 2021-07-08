@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  python3.8
+
+  Sample SAM Template for mads-swap-app
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+Parameters:
+  PGDBNAME:
+    Type: String
+    Description: Postgres DB name
+  PGHOST:
+    Type: String
+    Description: Postgres host
+  PGUSER:
+    Type: String
+    Description: Postgres user name
+  PGPASSLOCAL:
+    Type: String
+    Description: Postgres password for local invoke
+Resources:
+  BinanceCrawlerFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      PackageType: Image
+      Environment:
+        Variables:
+          PGDBNAME: !Ref PGDBNAME
+          PGHOST: !Ref PGHOST
+          PGUSER: !Ref PGUSER
+          PGPASSLOCAL: !Ref PGPASSLOCAL
+      Events:
+        BinanceCrawlerSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+            Name: binance-crawler-schedule
+            Description: 5 minute scheduled crawler
+            Enabled: True
+    Metadata:
+      Dockerfile: Dockerfile
+      DockerContext: ./binance_crawler
+      DockerTag: python3.8-v1
+    VpcConfig:
+      SecurityGroupIds:
+        - sg-dfdc6b93
+      SubnetIds:
+        - subnet-060b4cdd011c24c50
+        - subnet-048ac16788143d19a
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  BinanceCrawlerFunction:
+    Description: "Binance Crawler Lambda Function ARN"
+    Value: !GetAtt BinanceCrawlerFunction.Arn

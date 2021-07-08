@@ -7,12 +7,14 @@ import psycopg2
 http = urllib3.PoolManager()
 
 client = boto3.client('ssm')
-parameter = client.get_parameter(Name='[REDACTED]', WithDecryption=True)
-pghost = '[REDACTED]'
-pgport = 999999999
-pgdb = '[REDACTED]'
-pguser = '[REDACTED]'
-pgpass = parameter['Parameter']['Value']
+pghost = os.environ['PGHOST']
+pgport = 5432
+pgdb = os.environ['PGDBNAME']
+pguser = os.environ['PGUSER']
+pgpass = os.environ['PGPASSLOCAL']
+if pgpass == "":
+    parameter = client.get_parameter(Name='binance-crawler-password', WithDecryption=True)
+    pgpass = parameter['Parameter']['Value']
 
 conn = psycopg2.connect(host=pghost, database=pgdb, user=pguser, password=pgpass, connect_timeout=3)
 
@@ -77,7 +79,7 @@ set
     taker_buy_base_asset_volume = excluded.taker_buy_base_asset_volume,
     taker_buy_quote_asset_volume = excluded.taker_buy_quote_asset_volume;
 """
-    print(sql)
+    print(query_values)
     cur = conn.cursor()
     cur.execute(sql)
     conn.commit()
@@ -90,7 +92,6 @@ def lambda_handler(event, context):
     
     crawl_records = {r[0]:crawl_data(r[1],r[2]) for r in next_fetch}
     query_values,row_count = insert_data(crawl_records)
-
     return {
         'statusCode': 200,
         'body': json.dumps({"row_count":row_count, "query_values":query_values})
