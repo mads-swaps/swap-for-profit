@@ -4,8 +4,7 @@ import boto3
 import os
 import psycopg2
 import pandas as pd
-import buy_decision
-import price_decision
+import trade_models
 
 http = urllib3.PoolManager()
 
