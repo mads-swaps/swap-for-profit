@@ -41,7 +41,7 @@ inner join
     return r
 
 def crawl_data(symbol,epoch):
-    resp = http.request("GET", f"https://www.binance.com/api/v1/klines?symbol={symbol}&interval=15m&limit=1000&startTime={epoch}000")
+    resp = http.request("GET", f"https://www.binance.com/api/v1/klines?symbol={symbol}&interval=15m&limit=30&startTime={epoch}000")
     if resp.status==200:
         return json.loads(resp.data.replace(b'"',b''))
     else:

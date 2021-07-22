@@ -57,62 +57,6 @@ with
 			candlestick_15m cm 
 		inner join (select * from features where features.pair_id = new.pair_id and features.candle_open_time <= new.candle_open_time order by features.candle_open_time desc limit 15) f on f.pair_id = cm.pair_id and f.candle_open_time = cm.open_time) ema_rsi_results  order by open_time desc limit 1)
 select
-	LAG(ch.open,1) OVER (ORDER BY ch.open_time) open_1,
-	LAG(ch.high,1) OVER (ORDER BY ch.open_time) high_1,
-	LAG(ch.low,1) OVER (ORDER BY ch.open_time) low_1,
-	LAG(ch.close,1) OVER (ORDER BY ch.open_time) close_1,
-	LAG(ch.open,2) OVER (ORDER BY ch.open_time) open_2,
-	LAG(ch.high,2) OVER (ORDER BY ch.open_time) high_2,
-	LAG(ch.low,2) OVER (ORDER BY ch.open_time) low_2,
-	LAG(ch.close,2) OVER (ORDER BY ch.open_time) close_2,
-	LAG(ch.open,3) OVER (ORDER BY ch.open_time) open_3,
-	LAG(ch.high,3) OVER (ORDER BY ch.open_time) high_3,
-	LAG(ch.low,3) OVER (ORDER BY ch.open_time) low_3,
-	LAG(ch.close,3) OVER (ORDER BY ch.open_time) close_3,
-	LAG(ch.open,4) OVER (ORDER BY ch.open_time) open_4,
-	LAG(ch.high,4) OVER (ORDER BY ch.open_time) high_4,
-	LAG(ch.low,4) OVER (ORDER BY ch.open_time) low_4,
-	LAG(ch.close,4) OVER (ORDER BY ch.open_time) close_4,
-	LAG(ch.open,5) OVER (ORDER BY ch.open_time) open_5,
-	LAG(ch.high,5) OVER (ORDER BY ch.open_time) high_5,
-	LAG(ch.low,5) OVER (ORDER BY ch.open_time) low_5,
-	LAG(ch.close,5) OVER (ORDER BY ch.open_time) close_5,
-	LAG(ch.open,6) OVER (ORDER BY ch.open_time) open_6,
-	LAG(ch.high,6) OVER (ORDER BY ch.open_time) high_6,
-	LAG(ch.low,6) OVER (ORDER BY ch.open_time) low_6,
-	LAG(ch.close,6) OVER (ORDER BY ch.open_time) close_6,
-	LAG(ch.open,7) OVER (ORDER BY ch.open_time) open_7,
-	LAG(ch.high,7) OVER (ORDER BY ch.open_time) high_7,
-	LAG(ch.low,7) OVER (ORDER BY ch.open_time) low_7,
-	LAG(ch.close,7) OVER (ORDER BY ch.open_time) close_7,
-	LAG(ch.open,8) OVER (ORDER BY ch.open_time) open_8,
-	LAG(ch.high,8) OVER (ORDER BY ch.open_time) high_8,
-	LAG(ch.low,8) OVER (ORDER BY ch.open_time) low_8,
-	LAG(ch.close,8) OVER (ORDER BY ch.open_time) close_8,
-	LAG(ch.open,9) OVER (ORDER BY ch.open_time) open_9,
-	LAG(ch.high,9) OVER (ORDER BY ch.open_time) high_9,
-	LAG(ch.low,9) OVER (ORDER BY ch.open_time) low_9,
-	LAG(ch.close,9) OVER (ORDER BY ch.open_time) close_9,
-	LAG(ch.open,10) OVER (ORDER BY ch.open_time) open_10,
-	LAG(ch.high,10) OVER (ORDER BY ch.open_time) high_10,
-	LAG(ch.low,10) OVER (ORDER BY ch.open_time) low_10,
-	LAG(ch.close,10) OVER (ORDER BY ch.open_time) close_10,
-	LAG(ch.open,11) OVER (ORDER BY ch.open_time) open_11,
-	LAG(ch.high,11) OVER (ORDER BY ch.open_time) high_11,
-	LAG(ch.low,11) OVER (ORDER BY ch.open_time) low_11,
-	LAG(ch.close,11) OVER (ORDER BY ch.open_time) close_11,
-	LAG(ch.open,12) OVER (ORDER BY ch.open_time) open_12,
-	LAG(ch.high,12) OVER (ORDER BY ch.open_time) high_12,
-	LAG(ch.low,12) OVER (ORDER BY ch.open_time) low_12,
-	LAG(ch.close,12) OVER (ORDER BY ch.open_time) close_12,
-	LAG(ch.open,13) OVER (ORDER BY ch.open_time) open_13,
-	LAG(ch.high,13) OVER (ORDER BY ch.open_time) high_13,
-	LAG(ch.low,13) OVER (ORDER BY ch.open_time) low_13,
-	LAG(ch.close,13) OVER (ORDER BY ch.open_time) close_13,
-	LAG(ch.open,14) OVER (ORDER BY ch.open_time) open_14,
-	LAG(ch.high,14) OVER (ORDER BY ch.open_time) high_14,
-	LAG(ch.low,14) OVER (ORDER BY ch.open_time) low_14,
-	LAG(ch.close,14) OVER (ORDER BY ch.open_time) close_14,
 	AVG(ch.close) OVER(ORDER BY ch.open_time ROWS BETWEEN 13 PRECEDING AND CURRENT ROW) AS ma14,
 	AVG(ch.close) OVER(ORDER BY ch.open_time ROWS BETWEEN 29 PRECEDING AND CURRENT ROW) AS ma30,
 	AVG(ch.close) OVER(ORDER BY ch.open_time ROWS BETWEEN 89 PRECEDING AND CURRENT ROW) AS ma90,
@@ -123,16 +67,50 @@ select
 	rsi_all.ema_down,
 	rsi_all.rsi,
 	rsi_all.rsi_diff,
-	rsi_all.rsi_ma14
+	rsi_all.rsi_ma14,
+		extract(dow FROM ch.open_time) as dow,
+	mod(cast(extract(epoch FROM ch.open_time) / 86400 as numeric), 1) as tod,
+	ch.close - LAG(ch.close,1) over (partition by ch.pair_id order by ch.open_time) > 0 as trend_up,
+	(AVG(ch.close) over (partition by ch.pair_id order by ch.open_time rows between 2 preceding and current row)  - AVG(ch.close) over (partition by ch.pair_id order by ch.open_time rows between 3 preceding and 1 preceding)) > 0 as trend_up3,
+	(AVG(ch.close) over (partition by ch.pair_id order by ch.open_time rows between 13 preceding and current row)  - AVG(ch.close) over (partition by ch.pair_id order by ch.open_time rows between 14 preceding and 1 preceding)) > 0 as trend_up14,
+	(AVG(ch.close) over (partition by ch.pair_id order by ch.open_time rows between 29 preceding and current row)  - AVG(ch.close) over (partition by ch.pair_id order by ch.open_time rows between 30 preceding and 1 preceding)) > 0 as trend_up30,
+	(ch.open <= ch.close) and (ch.low + 0.382*(ch.high-ch.low) >= ch.close) as cs_ss,
+	(ch.open > ch.close) and (ch.low + 0.382*(ch.high-ch.low) >= ch.open) as cs_ssR,
+	(ch.open >= ch.close) and (ch.high - 0.382*(ch.high-ch.low) <= ch.close) as cs_hm,
+	(ch.open < ch.close) and (ch.high - 0.382*(ch.high-ch.low) <= ch.open) as cs_hmR,
+	(ch.open > ch.close) and
+		(LAG(ch.open,1) over (partition by ch.pair_id order by ch.open_time) < LAG(ch.close,1) over (partition by ch.pair_id order by ch.open_time)) and
+		(LAG(ch.close,1) over (partition by ch.pair_id order by ch.open_time) >= ch.open) and
+		(LAG(ch.open,1) over (partition by ch.pair_id order by ch.open_time) <= ch.close) and
+		(LAG(ch.high,1) over (partition by ch.pair_id order by ch.open_time) >= ch.high) and
+		(LAG(ch.high,1) over (partition by ch.pair_id order by ch.open_time) <= ch.low) as cs_brh,
+	(ch.open < ch.close) and
+		(LAG(ch.open,1) over (partition by ch.pair_id order by ch.open_time) > LAG(ch.close,1) over (partition by ch.pair_id order by ch.open_time)) and
+		(LAG(ch.close,1) over (partition by ch.pair_id order by ch.open_time) <= ch.open) and
+		(LAG(ch.open,1) over (partition by ch.pair_id order by ch.open_time) > ch.close) and
+		(LAG(ch.high,1) over (partition by ch.pair_id order by ch.open_time) >= ch.high) and
+		(LAG(ch.high,1) over (partition by ch.pair_id order by ch.open_time) <= ch.low) as cs_buh,
+	(ch.open < ch.close) and 
+		(LAG(ch.open,1) over (partition by ch.pair_id order by ch.open_time) > LAG(ch.close,1) over (partition by ch.pair_id order by ch.open_time)) and
+		(LAG(ch.close,1) over (partition by ch.pair_id order by ch.open_time) >= ch.open) and
+		(LAG(ch.open,1) over (partition by ch.pair_id order by ch.open_time) <= ch.close) and
+		(LAG(ch.high,1) over (partition by ch.pair_id order by ch.open_time) <= ch.high) and
+		(LAG(ch.high,1) over (partition by ch.pair_id order by ch.open_time) >= ch.low) as cs_ebu,
+	(ch.open > ch.close) and 
+		(LAG(ch.open,1) over (partition by ch.pair_id order by ch.open_time) < LAG(ch.close,1) over (partition by ch.pair_id order by ch.open_time)) and
+		(LAG(ch.close,1) over (partition by ch.pair_id order by ch.open_time) <= ch.open) and
+		(LAG(ch.open,1) over (partition by ch.pair_id order by ch.open_time) >= ch.close) and
+		(LAG(ch.high,1) over (partition by ch.pair_id order by ch.open_time) <= ch.high) and
+		(LAG(ch.high,1) over (partition by ch.pair_id order by ch.open_time) >= ch.low) as cs_ebr
 from ch inner join atr_all on ch.pair_id = atr_all.pair_id inner join rsi_all on ch.pair_id = rsi_all.pair_id
 into
-	new.open_1, new.high_1, new.low_1, new.close_1, new.open_2, new.high_2, new.low_2, new.close_2, new.open_3, new.high_3, new.low_3, new.close_3, new.open_4, new.high_4, new.low_4, new.close_4,
-	new.open_5, new.high_5, new.low_5, new.close_5, new.open_6, new.high_6, new.low_6, new.close_6, new.open_7, new.high_7, new.low_7, new.close_7, new.open_8, new.high_8, new.low_8, new.close_8,
-	new.open_9, new.high_9, new.low_9, new.close_9, new.open_10, new.high_10, new.low_10, new.close_10, new.open_11, new.high_11, new.low_11, new.close_11, new.open_12, new.high_12, new.low_12, new.close_12,
-	new.open_13, new.high_13, new.low_13, new.close_13, new.open_14, new.high_14, new.low_14, new.close_14,
 	new.ma14, new.ma30, new.ma90,
 	new.atr, new.atr_diff, new.atr_ma14,
-	new.ema_up, new.ema_down, new.rsi, new.rsi_diff, new.rsi_ma14
+	new.ema_up, new.ema_down, new.rsi, new.rsi_diff, new.rsi_ma14,
+	new.dow, new.tod,
+	new.trend_up, new.trend_up3, new.trend_up14, new.trend_up30,
+	new.cs_ss, new.cs_ssR, new.cs_hm, new.cs_hmR,
+	new.cs_brh, new.cs_buh, new.cs_ebu, new.cs_ebr
 order by ch.open_time desc
 limit 1;
 
