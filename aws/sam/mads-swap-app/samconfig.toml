@@ -8,6 +8,6 @@ s3_prefix = "mads-swap-app"
 region = "ap-southeast-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
-image_repositories = ["BinanceCrawlerFunction=917786932753.dkr.ecr.ap-southeast-1.amazonaws.com/binance_crawler_repo", "SwapSimulationFunction=917786932753.dkr.ecr.ap-southeast-1.amazonaws.com/swap_sim_repo"]
+image_repositories = ["BinanceCrawlerFunction=917786932753.dkr.ecr.ap-southeast-1.amazonaws.com/binance_crawler_repo"]
 profile = "mads-swap-tim"
 parameter_overrides = "PGDBNAME=\"mads_swap\" PGHOST=\"db-mads-swap.cxh7rfopxskd.ap-southeast-1.rds.amazonaws.com\" PGUSER=\"binance_crawler\" PGPASSLOCAL=\"\""

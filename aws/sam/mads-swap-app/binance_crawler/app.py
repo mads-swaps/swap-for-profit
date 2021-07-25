@@ -29,6 +29,7 @@ from
         select
             pair_id, extract(epoch from max(open_time))::numeric::integer as start_epoch
         from candlestick_15m
+        where pair_id >= 0
         group by pair_id
     ) d
 inner join
@@ -41,7 +42,7 @@ inner join
     return r
 
 def crawl_data(symbol,epoch):
-    resp = http.request("GET", f"https://www.binance.com/api/v1/klines?symbol={symbol}&interval=15m&limit=30&startTime={epoch}000")
+    resp = http.request("GET", f"https://www.binance.com/api/v1/klines?symbol={symbol}&interval=15m&limit=20&startTime={epoch}000")
     if resp.status==200:
         return json.loads(resp.data.replace(b'"',b''))
     else:
@@ -57,9 +58,26 @@ def insert_data(records):
             if i == 0:
                 fields[7] = "NULL"
             sql_values.append("(" + (",".join(fields)) + ")")
+    query_values = ",\n    ".join(sql_values)
+
+    reverse_sql_values = []
+    for pid,rows in records.items():
+        for i,r in enumerate(rows[::-1]):
+            r[1] = 1/r[1]
+            r[2] = 1/r[2]
+            r[3] = 1/r[3]
+            r[4] = 1/r[4]
+            fields = [str(pid*-1-1)] + [str(f) for f in r][:-1]
+            fields[1] = f"to_timestamp({fields[1][:-3]})"
+            fields[7] = f"to_timestamp({fields[7][:-3]})"
+            if i == 0:
+                fields[7] = "NULL"
+            reverse_sql_values.append("(" + (",".join(fields)) + ")")
+    reverse_query_values = ",\n    ".join(reverse_sql_values)
+
     if len(sql_values) == 0:
         return "",-1
-    query_values = ",\n    ".join(sql_values)
+
     sql = f"""
 insert into candlestick_15m (pair_id, open_time, "open", high, low, "close", volume,  close_time,
     quote_asset_volume, number_of_trades, taker_buy_base_asset_volume, taker_buy_quote_asset_volume)
@@ -82,6 +100,29 @@ set
     print(query_values)
     cur = conn.cursor()
     cur.execute(sql)
+
+    sql = f"""
+insert into candlestick_15m (pair_id, open_time, "open", low, high, "close", quote_asset_volume, close_time,
+    volume, number_of_trades, taker_buy_quote_asset_volume, taker_buy_base_asset_volume)
+values
+    {reverse_query_values}
+on conflict (pair_id, open_time)
+    do update
+set
+    "open" = excluded."open",
+    high = excluded.high,
+    low = excluded.low,
+    "close" = excluded."close",
+    volume = excluded.volume,
+    close_time = excluded.close_time,
+    quote_asset_volume = excluded.quote_asset_volume,
+    number_of_trades = excluded.number_of_trades,
+    taker_buy_base_asset_volume = excluded.taker_buy_base_asset_volume,
+    taker_buy_quote_asset_volume = excluded.taker_buy_quote_asset_volume;
+"""
+    print(query_values)
+    cur.execute(sql)
+
     conn.commit()
     row_count = cur.rowcount
     cur.close()
