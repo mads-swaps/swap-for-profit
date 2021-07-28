@@ -35,7 +35,7 @@ def make_decision(x_data, extra_data, info_dict):
     # I'll go back and change buy/sell decisions if they are within 8 candles of last buy/sell
     
     # Enumerating is slow, so if you can just use vectorization, the simulation will run much faster
-    cooldown_period = 8
+    cooldown_period = 1
     for i, (k,v) in enumerate(decision.items()):
         if last_action + cooldown_period > i:
             decision[k] = 0 # set to hold
