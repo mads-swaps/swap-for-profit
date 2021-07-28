@@ -62,7 +62,6 @@ ALTER TABLE public.candlestick_15m ADD CONSTRAINT candlestick_15m_fk FOREIGN KEY
 
 
 
-
 -- public.features definition
 
 -- Drop table
@@ -97,6 +96,12 @@ CREATE UNLOGGED TABLE public.features (
 	cs_ebr bool NULL,
 	dow int2 NULL,
 	tod numeric(9, 8) NULL,
+	sup14 numeric(20, 8) NULL,
+	sup30 numeric(20, 8) NULL,
+	sup90 numeric(20, 8) NULL,
+	res14 numeric(20, 8) NULL,
+	res30 numeric(20, 8) NULL,
+	res90 numeric(20, 8) NULL,
 	CONSTRAINT features_pair_open_time_key UNIQUE (pair_id, candle_open_time)
 );
 

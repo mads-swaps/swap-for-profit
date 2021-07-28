@@ -5,17 +5,28 @@ update
 set
 	ma14 = candle_features.ma14,
 	ma30 = candle_features.ma30,
-	ma90 = candle_features.ma90
+	ma90 = candle_features.ma90,
+	sup14 = candle_features.sup14,
+	sup30 = candle_features.sup30,
+	sup90 = candle_features.sup90,
+	res14 = candle_features.res14,
+	res30 = candle_features.res30,
+	res90 = candle_features.res90
 from
 	(select ch.pair_id, ch.open_time,
 		avg(ch.close) over (partition by ch.pair_id order by ch.open_time rows between 13 preceding and current row) as ma14,
 		avg(ch.close) over (partition by ch.pair_id order by ch.open_time rows between 29 preceding and current row) as ma30,
-		avg(ch.close) over (partition by ch.pair_id order by ch.open_time rows between 89 preceding and current row) as ma90
+		avg(ch.close) over (partition by ch.pair_id order by ch.open_time rows between 89 preceding and current row) as ma90,
+		min(ch.low) over (partition by ch.pair_id order by ch.open_time rows between 13 preceding and current row) as sup14,
+		min(ch.low) over (partition by ch.pair_id order by ch.open_time rows between 29 preceding and current row) as sup30,
+		min(ch.low) over (partition by ch.pair_id order by ch.open_time rows between 89 preceding and current row) as sup90,
+		max(ch.high) over (partition by ch.pair_id order by ch.open_time rows between 13 preceding and current row) as res14,
+		max(ch.high) over (partition by ch.pair_id order by ch.open_time rows between 29 preceding and current row) as res30,
+		max(ch.high) over (partition by ch.pair_id order by ch.open_time rows between 89 preceding and current row) as res90
 	from candlestick_15m ch
-where pair_id in (-1,-2,-3)
+where pair_id in (0,1,2)
 	) candle_features
-where candle_features.open_time = features.candle_open_time and candle_features.pair_id = features.pair_id
-
+where candle_features.open_time = features.candle_open_time and candle_features.pair_id = features.pair_id;
 
 
 update

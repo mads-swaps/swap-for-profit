@@ -60,6 +60,12 @@ select
 	AVG(ch.close) OVER(ORDER BY ch.open_time ROWS BETWEEN 13 PRECEDING AND CURRENT ROW) AS ma14,
 	AVG(ch.close) OVER(ORDER BY ch.open_time ROWS BETWEEN 29 PRECEDING AND CURRENT ROW) AS ma30,
 	AVG(ch.close) OVER(ORDER BY ch.open_time ROWS BETWEEN 89 PRECEDING AND CURRENT ROW) AS ma90,
+	MIN(ch.low) OVER(ORDER BY ch.open_time ROWS BETWEEN 13 PRECEDING AND CURRENT ROW) AS sup14,
+	MIN(ch.low) OVER(ORDER BY ch.open_time ROWS BETWEEN 29 PRECEDING AND CURRENT ROW) AS sup30,
+	MIN(ch.low) OVER(ORDER BY ch.open_time ROWS BETWEEN 89 PRECEDING AND CURRENT ROW) AS sup90,
+	MAX(ch.high) OVER(ORDER BY ch.open_time ROWS BETWEEN 13 PRECEDING AND CURRENT ROW) AS res14,
+	MAX(ch.high) OVER(ORDER BY ch.open_time ROWS BETWEEN 29 PRECEDING AND CURRENT ROW) AS res30,
+	MAX(ch.high) OVER(ORDER BY ch.open_time ROWS BETWEEN 89 PRECEDING AND CURRENT ROW) AS res90,
 	atr_all.atr,
 	atr_all.atr_diff,
 	atr_all.atr_ma14,
@@ -105,6 +111,8 @@ select
 from ch inner join atr_all on ch.pair_id = atr_all.pair_id inner join rsi_all on ch.pair_id = rsi_all.pair_id
 into
 	new.ma14, new.ma30, new.ma90,
+	new.sup14, new.sup30, new.sup90,
+	new.res14, new.res30, new.res90,
 	new.atr, new.atr_diff, new.atr_ma14,
 	new.ema_up, new.ema_down, new.rsi, new.rsi_diff, new.rsi_ma14,
 	new.dow, new.tod,
@@ -118,6 +126,7 @@ limit 1;
     end;
 $function$
 ;
+
 
 
 
