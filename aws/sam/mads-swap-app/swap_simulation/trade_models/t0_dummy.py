@@ -31,11 +31,11 @@ def make_decision(x_data, extra_data, info_dict):
     decision = decision.where(delta > x_data['custom_close_2'] * 0.01, 1) # buy if close is went up more than 1%
     decision = decision.where(-delta > x_data['custom_close_2'] * 0.01, -1) # sell if close is went down more than 1%
     
-    # now I want to add a restriction that if I bought or sold, I will hold for at least 8 candles
-    # I'll go back and change buy/sell decisions if they are within 8 candles of last buy/sell
+    # now I want to add a restriction that if I bought or sold, I will hold for at least 2 candles
+    # I'll go back and change buy/sell decisions if they are within 2 candles of last buy/sell
     
     # Enumerating is slow, so if you can just use vectorization, the simulation will run much faster
-    cooldown_period = 1
+    cooldown_period = 2
     for i, (k,v) in enumerate(decision.items()):
         if last_action + cooldown_period > i:
             decision[k] = 0 # set to hold

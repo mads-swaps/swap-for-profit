@@ -18,10 +18,7 @@ def get_target_stoploss(df, threshold_ratio=(0.04,0.02), use_atr=True, atr_ratio
     return targets, stop_losses
 
 def make_decision(x_data, extra_data, info_dict):
-    # Replace any boolean or object columns as int
-    for col in x_data.columns:
-        if x_data[col].dtype.kind in ['b','O']:
-            x_data[col] = x_data[col].astype(int)
+    x_data = x_data.reset_index(drop=True)
     
     clf = pickle.load(open(info_dict['portfolio']['model_filepath'], 'rb'))
     pred = clf.predict(x_data)
