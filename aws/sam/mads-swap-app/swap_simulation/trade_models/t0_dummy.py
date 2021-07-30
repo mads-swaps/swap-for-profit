@@ -3,10 +3,21 @@ import numpy as np
 import pandas as pd
 
 def columns():
-    return ['close']
+    return ['high','low','close']
 
 def make_decision(x_data, extra_data, info_dict):
-    # you can assign key and values to info_dict to pass data between batches
+    '''
+    Returns decision wheter to buy (>0) / sell (<0) or hold (0), and the price to execute at.
+            Parameters:
+                    x_data (DataFrame): DataFrame of input data.  The index is a timestamp
+                    extra_data (DataFrame): DataFrame with extra data, due to possibility of NaN values, dtypes may be incorrect
+                    info_dict (dict): You can assign key and values to info_dict to pass data between batches
+
+            Returns:
+                    decision (Series): Series of decision values in the order the input x_data, index does not matter
+                    execution_price (Series): Series of execution price in the order the input x_data, index does not matter
+    '''    
+    
     # ie: if you do info_dict['test'] = 'testing', next batch will have access to info_dict['test']
     # portfolio is provided by default
     
@@ -19,7 +30,8 @@ def make_decision(x_data, extra_data, info_dict):
     
     # Remember to do scaling or normalization here if needed. x_data is not scaled or normalized
 
-    # since we have 2 extra rows, we can do something with it in extra_data
+    
+    # since we requested 2 extra rows, we can do something with it in extra_data
     extra_data['custom_close_2'] = extra_data['close'].shift(2)
     # assign it to x_data using the "is_extra" flag so the extra data isn't used
     x_data['custom_close_2'] = extra_data[~extra_data['is_extra']]['custom_close_2']
@@ -41,5 +53,25 @@ def make_decision(x_data, extra_data, info_dict):
             decision[k] = 0 # set to hold
         elif v !=0: # else if not hold
             last_action = i
+
             
-    return decision
+    # --- EXECUTE PRICE EXAMPLES ---
+    # this one sets it to candle opening price, which is very bad because it leaks data
+#     execution_price = x_data['open']
+    
+    # this example sets the execute price to the mid point of high and low of previous candle
+    # note that this is just a demonstration, because it requires knowledge of the full candle
+    # data prior to it being available, it is considered information leakage
+#     execution_price = (x_data['high'] - x_data['low']) / 2 + x_data['low']
+    
+    # this example adjusts the execute price based on buying or selling, essentially a 0.01% slippage
+    execution_price = x_data['close']
+    execution_price.loc[decision > 1] = execution_price.loc[decision > 1] * 0.9999
+    execution_price.loc[decision < 1] = execution_price.loc[decision < 1] * 1.0001
+
+    # this one sets it to closing price
+#     execution_price = x_data['close']
+
+    return decision, execution_price
+
+    # alternatively, you can just return execution_price=x_data['close'] for the previous behavior
