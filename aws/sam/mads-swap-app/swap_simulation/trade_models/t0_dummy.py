@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 
-def columns():
+def columns(portfolio):
     return ['high','low','close']
 
 def make_decision(x_data, extra_data, info_dict):
