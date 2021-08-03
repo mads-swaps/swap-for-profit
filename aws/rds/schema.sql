@@ -14,9 +14,6 @@ CREATE TABLE public.pairs (
 
 
 
-
--- public.candlestick_15m definition
-
 -- Drop table
 
 -- DROP TABLE public.candlestick_15m;
@@ -36,8 +33,12 @@ CREATE TABLE public.candlestick_15m (
 	taker_buy_quote_asset_volume numeric(20, 8) NOT NULL,
 	created_at timestamptz NOT NULL DEFAULT now(),
 	updated_at timestamptz NOT NULL DEFAULT now(),
-	CONSTRAINT candlestick_15m_pair_open_time_key UNIQUE (pair_id, open_time)
+	column1 int4 NULL,
+	CONSTRAINT candlestick_15m_pair_open_time_key UNIQUE (pair_id, open_time),
+	CONSTRAINT candlestick_15m_pk PRIMARY KEY (pair_id, open_time),
+	CONSTRAINT candlestick_15m_fk FOREIGN KEY (pair_id) REFERENCES public.pairs(id)
 );
+CREATE INDEX candlestick_15m_open_time_idx ON public.candlestick_15m USING btree (open_time);
 
 -- Table Triggers
 
@@ -53,16 +54,7 @@ update
     public.candlestick_15m for each row execute function create_feature();
 
 
--- public.candlestick_15m foreign keys
 
-ALTER TABLE public.candlestick_15m ADD CONSTRAINT candlestick_15m_fk FOREIGN KEY (pair_id) REFERENCES public.pairs(id);
-
-
-
-
-
-
--- public.features definition
 
 -- Drop table
 
@@ -102,8 +94,11 @@ CREATE UNLOGGED TABLE public.features (
 	res14 numeric(20, 8) NULL,
 	res30 numeric(20, 8) NULL,
 	res90 numeric(20, 8) NULL,
-	CONSTRAINT features_pair_open_time_key UNIQUE (pair_id, candle_open_time)
+	CONSTRAINT features_pair_open_time_key UNIQUE (pair_id, candle_open_time),
+	CONSTRAINT features_pk PRIMARY KEY (pair_id, candle_open_time),
+	CONSTRAINT features_fk FOREIGN KEY (pair_id) REFERENCES public.pairs(id)
 );
+CREATE INDEX features_candle_open_time_idx ON public.features USING btree (candle_open_time);
 
 -- Table Triggers
 
@@ -111,13 +106,6 @@ create trigger feature_engineering before
 insert
     on
     public.features for each row execute function feature_engineering();
-
-
--- public.features foreign keys
-
-ALTER TABLE public.features ADD CONSTRAINT features_fk FOREIGN KEY (pair_id) REFERENCES public.pairs(id);
-
-
 
 
 
