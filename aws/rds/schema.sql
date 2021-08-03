@@ -116,3 +116,96 @@ insert
 -- public.features foreign keys
 
 ALTER TABLE public.features ADD CONSTRAINT features_fk FOREIGN KEY (pair_id) REFERENCES public.pairs(id);
+
+
+
+
+
+
+
+
+-- Drop table
+
+-- DROP TABLE public.environment;
+
+CREATE TABLE public.environment (
+	id int4 NOT NULL DEFAULT nextval('simulation_configs_id_seq'::regclass),
+	starting_timestamp timestamp NOT NULL,
+	starting_funds numeric(20, 8) NOT NULL,
+	trading_fees_percent numeric(20, 8) NOT NULL,
+	trading_fees_buy numeric(20, 8) NOT NULL,
+	trading_fees_sell numeric(20, 8) NOT NULL,
+	"name" varchar NOT NULL,
+	pair_id int2 NOT NULL,
+	CONSTRAINT simulation_configs_pkey PRIMARY KEY (id),
+	CONSTRAINT environment_fk FOREIGN KEY (pair_id) REFERENCES public.pairs(id)
+);
+CREATE INDEX simulation_configs_id_idx ON public.environment USING btree (id);
+
+
+
+
+
+
+-- Drop table
+
+-- DROP TABLE public.strategy;
+
+CREATE TABLE public.strategy (
+	id serial NOT NULL,
+	strategy_name varchar(200) NOT NULL,
+	model varchar(200) NOT NULL,
+	max_batch_size int4 NOT NULL,
+	extra_rows int4 NOT NULL,
+	parameters jsonb NULL,
+	CONSTRAINT strategy_pkey PRIMARY KEY (id)
+);
+
+
+
+
+
+
+-- Drop table
+
+-- DROP TABLE public.simulation;
+
+CREATE TABLE public.simulation (
+	id serial NOT NULL,
+	strategy_id int4 NOT NULL,
+	environment_id int4 NOT NULL,
+	info_dict jsonb NULL DEFAULT '{}'::jsonb,
+	CONSTRAINT simulation_pkey PRIMARY KEY (id),
+	CONSTRAINT simulation_un UNIQUE (strategy_id, environment_id),
+	CONSTRAINT simulation_fk FOREIGN KEY (strategy_id) REFERENCES public.strategy(id),
+	CONSTRAINT simulation_fk_1 FOREIGN KEY (environment_id) REFERENCES public.environment(id)
+);
+
+
+
+
+
+-- Drop table
+
+-- DROP TABLE public.simulation_record;
+
+CREATE TABLE public.simulation_record (
+	simulation_id int4 NOT NULL,
+	open_time timestamp NOT NULL,
+	trade_action varchar(4) NOT NULL,
+	execute_price numeric(20, 8) NOT NULL,
+	fund1 numeric(40, 28) NOT NULL,
+	fund2 numeric(40, 28) NOT NULL,
+	total_value numeric(40, 28) NOT NULL,
+	CONSTRAINT simulation_record_un UNIQUE (simulation_id, open_time),
+	CONSTRAINT simulation_record_fk FOREIGN KEY (simulation_id) REFERENCES public.simulation(id)
+);
+CREATE INDEX simulation_record_open_time_idx ON public.simulation_record USING btree (open_time);
+CREATE UNIQUE INDEX simulation_record_simulation_id_idx ON public.simulation_record USING btree (simulation_id, open_time);
+CREATE INDEX simulation_record_trade_action_idx ON public.simulation_record USING btree (trade_action);
+
+
+
+
+
+

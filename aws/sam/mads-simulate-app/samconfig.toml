@@ -1,0 +1,13 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "mads-simulate-app"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-q9d5gaa4a1uo"
+s3_prefix = "mads-simulate-app"
+region = "ap-southeast-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "PGDBNAME=\"mads_swap\" PGHOST=\"db-mads-swap.cxh7rfopxskd.ap-southeast-1.rds.amazonaws.com\" PGUSER=\"binance_crawler\" PGPASSLOCAL=\"\""
+image_repositories = ["SwapSimulationFunction=917786932753.dkr.ecr.ap-southeast-1.amazonaws.com/simulate_repo"]
+profile = "mads-swap-tim"

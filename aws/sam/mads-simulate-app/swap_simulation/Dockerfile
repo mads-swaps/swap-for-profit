@@ -1,8 +1,7 @@
 FROM public.ecr.aws/lambda/python:3.8
 
 COPY app.py requirements.txt ./
-COPY price_decision/* ./price_decision/
-COPY buy_decision/* ./buy_decision/
+COPY trade_models/* ./trade_models/
 
 RUN python3.8 -m pip install -r requirements.txt -t .
 

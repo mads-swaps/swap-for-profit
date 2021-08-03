@@ -25,7 +25,7 @@ def make_decision(x_data, extra_data, info_dict):
     if 'batch_num' not in info_dict:
         info_dict['batch_num'] = 0 # start at 0
         info_dict['last_action_index'] = 0
-    last_action = info_dict['last_action_index'] - (info_dict['batch_num'] * info_dict['portfolio']['max_batch_size']) # will be negative if last action was from previous batch
+    last_action = info_dict['last_action_index'] - (info_dict['batch_num'] * info_dict['max_batch_size']) # will be negative if last action was from previous batch
 
     
     # Remember to do scaling or normalization here if needed. x_data is not scaled or normalized
@@ -54,7 +54,9 @@ def make_decision(x_data, extra_data, info_dict):
         elif v !=0: # else if not hold
             last_action = i
 
-            
+    info_dict['last_action_index'] = last_action
+    info_dict['batch_num'] += 1
+    
     # --- EXECUTE PRICE EXAMPLES ---
     # this one sets it to candle opening price, which is very bad because it leaks data
 #     execution_price = x_data['open']
