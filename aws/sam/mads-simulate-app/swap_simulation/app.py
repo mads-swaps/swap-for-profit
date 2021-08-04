@@ -19,19 +19,28 @@ pgport = 5432
 pgdb = os.environ['PGDBNAME']
 pguser = os.environ['PGUSER']
 pgpass = os.environ['PGPASSLOCAL']
-if pgpass == "":
-    # I guess this is a good place to put AWS specific variables
-    parameter = client.get_parameter(Name='binance-crawler-password', WithDecryption=True)
-    pgpass = parameter['Parameter']['Value']
-    asset_prefix = '/mnt/model_assets/'
-    import sys
-    sys.path.insert(1, asset_prefix)
-    import trade_models
-    print("AWS Import complete")
-else:
-    # I guess this is a good place to put local variables
-    asset_prefix = ''
-    import trade_models
+
+asset_prefix = '/mnt/model_assets/'
+import sys
+sys.path.insert(1, asset_prefix)
+import trade_models
+print("AWS Import complete")
+
+# if pgpass == "":
+#     # I guess this is a good place to put AWS specific variables
+#     print("Get SSM Parameter")
+#     parameter = client.get_parameter(Name='binance-crawler-password', WithDecryption=True)
+#     print("Get SSM Parameter Success")
+#     pgpass = parameter['Parameter']['Value']
+#     asset_prefix = '/mnt/model_assets/'
+#     import sys
+#     sys.path.insert(1, asset_prefix)
+#     import trade_models
+#     print("AWS Import complete")
+# else:
+#     # I guess this is a good place to put local variables
+#     asset_prefix = ''
+#     import trade_models
 
 conn = psycopg2.connect(host=pghost, database=pgdb, user=pguser, password=pgpass, connect_timeout=3)
 sqs = boto3.client('sqs', region_name='ap-southeast-1')
@@ -136,6 +145,7 @@ def lambda_handler(event, context):
             'statusCode': 200,
             'body': 'staying alive'
         }
+    print(f"Simulation ID to run: {sim_id}")
 
     # validate inputs and portfolio parameters
     def validate(date_text):
@@ -224,6 +234,7 @@ def lambda_handler(event, context):
         records = results.reset_index()[['open_time', 'execute_price', 'actual_action', 'fund1', 'fund2', 'total_value']]
         records = records.rename(columns={'actual_action':'trade_action'})
         records['simulation_id'] = sim_id
+        print("Insert simulation record")
         execute_values(conn, records, 'simulation_record')
 
         cursor = conn.cursor()
@@ -231,16 +242,17 @@ def lambda_handler(event, context):
         cursor.execute(f"update simulation set info_dict='{json.dumps(info_dict)}' where id={config['simulation_id']}")
         conn.commit()
         cursor.close()
+        print("Updated simulation info_dict")
 
         if len(records) == config['max_batch_size']:
             print("Max batch size reached, queue again")
             sqs_msg = [{'Id':f"{sim_id}",'MessageBody':f"{sim_id}", 'MessageGroupId':"group", 'MessageDeduplicationId':uuid.uuid4().hex.upper()}]
             sqs.send_message_batch(QueueUrl='https://sqs.ap-southeast-1.amazonaws.com/917786932753/simulation-queue.fifo', Entries=sqs_msg)
+            print(f"Requeued for {sim_id}")
         else:
             print("Latest processed")
 
 
-        print(f"Simulation ID to run: {sim_id}")
         return {
             'statusCode': 200,
             'body': json.dumps({})
