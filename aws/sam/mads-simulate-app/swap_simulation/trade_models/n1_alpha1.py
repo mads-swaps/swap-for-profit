@@ -57,12 +57,12 @@ def get_target_stoploss(df, threshold_ratio=(0.04,0.02), use_atr=True, atr_ratio
 def make_decision(x_data, extra_data, info_dict):
     x_data = x_data.reset_index(drop=True)
     
-    clf = pickle.load(open(info_dict['portfolio']['model_filepath'], 'rb'))
+    clf = pickle.load(open(info_dict['model_filepath'], 'rb'))
     pred = clf.predict(x_data)
-    use_atr = info_dict['portfolio']['model_use_atr']
-    atr_ratio = info_dict['portfolio']['model_ratio']
-    threshold_ratio = info_dict['portfolio']['model_ratio']
-    reverse = info_dict['portfolio']['model_reverse']
+    use_atr = info_dict['model_use_atr']
+    atr_ratio = info_dict['model_ratio']
+    threshold_ratio = info_dict['model_ratio']
+    reverse = info_dict['model_reverse']
     targets, stop_losses = get_target_stoploss(x_data, use_atr=use_atr, atr_ratio=atr_ratio, threshold_ratio=threshold_ratio, reverse=reverse)
     #close_prices = x_data['close'].to_numpy()
     low_prices = x_data['low'].to_numpy()

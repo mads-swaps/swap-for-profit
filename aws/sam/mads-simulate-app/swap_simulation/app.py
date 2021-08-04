@@ -12,6 +12,7 @@ import pytz
 import re
 from operator import itemgetter
 import trade_models
+import sklearn
 
 client = boto3.client('ssm')
 pghost = os.environ['PGHOST']
@@ -119,16 +120,13 @@ def execute_values(conn, df, table):
     cursor.close()
 
 def lambda_handler(event, context):
-    sim_id = event["Records"][0]["body"]
-
-    sql = f"""select si.id as simulation_id, st.strategy_name, st.model, st.max_batch_size, st.extra_rows, st.parameters, si.info_dict, e.starting_funds, e.trading_fees_percent, e.trading_fees_buy, e.trading_fees_sell, e.pair_id, to_char(e.starting_timestamp :: date, 'yyyy-mm-dd') as start_time from simulation si inner join strategy st on si.strategy_id = st.id inner join environment e on si.environment_id = e.id where si.id = {sim_id}"""
-    simulation_info = pd.read_sql_query(sql, conn).iloc[0]
-
-    config = {}
-    for k in config_keys:
-        config[k] = simulation_info[k]
-    config = {**config, **simulation_info['parameters']}
-    config = {**config, **simulation_info['info_dict']}
+    try:
+        sim_id = event["Records"][0]["body"]
+    except:
+        return{
+            'statusCode': 200,
+            'body': 'staying alive'
+        }
 
     # validate inputs and portfolio parameters
     def validate(date_text):
@@ -136,95 +134,121 @@ def lambda_handler(event, context):
             datetime.strptime(date_text, '%Y-%m-%d')
         except ValueError:
             raise ValueError("Incorrect data format, should be YYYY-MM-DD")
-            
-    # validate start / end string format input to protect against injection
-    validate(config['start_time'])
 
-    # validate starting funds
-    assert config['starting_funds'] > 0, "Starting funds for must be > 0"
+    print("129")
 
-    # validate fees
-    assert config['trading_fees_percent'] >= 0, "Trading Fees % for must be >= 0%"
-    assert config['trading_fees_percent'] < 100, "Trading Fees % for must be < 100%"
-    assert config['trading_fees_buy'] >= 0, "Trading Fees (buy) for must be >= 0"
-    assert config['trading_fees_sell'] >= 0, "Trading Fees (sell) for must be >= 0"
+    try:
+        sql = f"""select si.id as simulation_id, st.strategy_name, st.model, st.max_batch_size, st.extra_rows, st.parameters, si.info_dict, e.starting_funds, e.trading_fees_percent, e.trading_fees_buy, e.trading_fees_sell, e.pair_id, to_char(e.starting_timestamp :: date, 'yyyy-mm-dd') as start_time from simulation si inner join strategy st on si.strategy_id = st.id inner join environment e on si.environment_id = e.id where si.id = {sim_id}"""
+        simulation_info = pd.read_sql_query(sql, conn).iloc[0]
 
-    # validate batch size
-    assert config['max_batch_size'] > 0, f"{config['max_batch_size']} is not a valid batch size"
+        config = {}
+        for k in config_keys:
+            config[k] = simulation_info[k]
+        config = {**config, **simulation_info['parameters']}
+        config = {**config, **simulation_info['info_dict']}
 
-    t,f1,f2 = get_state(config)
-    cur_funds = [f1,f2]
-    current_batch_start_time = t
+        print("139")
+                
+        # validate start / end string format input to protect against injection
+        validate(config['start_time'])
+
+        # validate starting funds
+        assert config['starting_funds'] > 0, "Starting funds for must be > 0"
+
+        # validate fees
+        assert config['trading_fees_percent'] >= 0, "Trading Fees % for must be >= 0%"
+        assert config['trading_fees_percent'] < 100, "Trading Fees % for must be < 100%"
+        assert config['trading_fees_buy'] >= 0, "Trading Fees (buy) for must be >= 0"
+        assert config['trading_fees_sell'] >= 0, "Trading Fees (sell) for must be >= 0"
+
+        # validate batch size
+        assert config['max_batch_size'] > 0, f"{config['max_batch_size']} is not a valid batch size"
+
+        print("162")
+        t,f1,f2 = get_state(config)
+        cur_funds = [f1,f2]
+        current_batch_start_time = t
 
 
-    fee_multiplier = 1.0 - config['trading_fees_percent'] / 100
+        fee_multiplier = 1.0 - config['trading_fees_percent'] / 100
 
 
-    model = trade_models.__dict__[config['model']]
-    columns = model.columns(config)
+        model = trade_models.__dict__[config['model']]
+        columns = model.columns(config)
 
-    print("Current batch: ", current_batch_start_time)
+        print("Current batch: ", current_batch_start_time)
 
-    batch_data, results, extra_data, batch_close_time = get_batch_data(config['pair_id'], current_batch_start_time, columns, config['max_batch_size'], config['extra_rows'])
+        batch_data, results, extra_data, batch_close_time = get_batch_data(config['pair_id'], current_batch_start_time, columns, config['max_batch_size'], config['extra_rows'])
+        print("177")
 
-    # Replace any boolean or object columns as int
-    for col in batch_data.columns:
-        if batch_data[col].dtype.kind in ['b','O']:
-            batch_data[col] = batch_data[col].astype(int)
+        # Replace any boolean or object columns as int
+        for col in batch_data.columns:
+            if batch_data[col].dtype.kind in ['b','O']:
+                batch_data[col] = batch_data[col].astype(int)
 
-    batch_model_decision, batch_execute_price = model.make_decision(batch_data[columns], extra_data, config)
+        batch_model_decision, batch_execute_price = model.make_decision(batch_data[columns], extra_data, config)
 
-    results['trade_model_decision'] = batch_model_decision.values
-    results['execute_price'] = batch_execute_price.values
+        results['trade_model_decision'] = batch_model_decision.values
+        results['execute_price'] = batch_execute_price.values
 
-    results[['actual_action','fund1','fund2']] = np.nan
-    results.iloc[0, results.columns.get_loc('fund1')] = cur_funds[0]
-    results.iloc[0, results.columns.get_loc('fund2')] = cur_funds[1]
+        results[['actual_action','fund1','fund2']] = np.nan
+        results.iloc[0, results.columns.get_loc('fund1')] = cur_funds[0]
+        results.iloc[0, results.columns.get_loc('fund2')] = cur_funds[1]
+        print("192")
 
-    # print("...Simulating actions...")
-    for x,r in results.iterrows():
-        if cur_funds[0] > 0 and cur_funds[1] == 0:
-            if r['trade_model_decision'] > 0:
-                cur_funds[1] = ((cur_funds[0]-config['trading_fees_buy']) * r['execute_price']) * fee_multiplier
-                cur_funds[0] = 0
-                results.loc[x,'fund1'] = cur_funds[0]
-                results.loc[x,'fund2'] = cur_funds[1]
-                results.loc[x,'actual_action'] = 'buy'
-        elif cur_funds[1] > 0 and cur_funds[0] == 0:
-            if r['trade_model_decision'] < 0:
-                cur_funds[0] = ((cur_funds[1]-config['trading_fees_sell']) / r['execute_price']) * fee_multiplier
-                cur_funds[1] = 0
-                results.loc[x,'fund1'] = cur_funds[0]
-                results.loc[x,'fund2'] = cur_funds[1]
-                results.loc[x,'actual_action'] = 'sell'
+        # print("...Simulating actions...")
+        for x,r in results.iterrows():
+            if cur_funds[0] > 0 and cur_funds[1] == 0:
+                if r['trade_model_decision'] > 0:
+                    cur_funds[1] = ((cur_funds[0]-config['trading_fees_buy']) * r['execute_price']) * fee_multiplier
+                    cur_funds[0] = 0
+                    results.loc[x,'fund1'] = cur_funds[0]
+                    results.loc[x,'fund2'] = cur_funds[1]
+                    results.loc[x,'actual_action'] = 'buy'
+            elif cur_funds[1] > 0 and cur_funds[0] == 0:
+                if r['trade_model_decision'] < 0:
+                    cur_funds[0] = ((cur_funds[1]-config['trading_fees_sell']) / r['execute_price']) * fee_multiplier
+                    cur_funds[1] = 0
+                    results.loc[x,'fund1'] = cur_funds[0]
+                    results.loc[x,'fund2'] = cur_funds[1]
+                    results.loc[x,'actual_action'] = 'sell'
+            else:
+                # you have run out of money!
+                pass
+
+        results[['fund1','fund2']] = results[['fund1','fund2']].ffill()
+        results['total_value'] = results['fund1'] + results['fund2'] / results['close']
+        results['actual_action'] = results['actual_action'].fillna('none')
+        records = results.reset_index()[['open_time', 'execute_price', 'actual_action', 'fund1', 'fund2', 'total_value']]
+        records = records.rename(columns={'actual_action':'trade_action'})
+        records['simulation_id'] = sim_id
+        print("220")
+        execute_values(conn, records, 'simulation_record')
+        print("222")
+
+        cursor = conn.cursor()
+        info_dict = {k:v for k,v in config.items() if k not in config_keys}
+        cursor.execute(f"update simulation set info_dict='{json.dumps(info_dict)}' where id={config['simulation_id']}")
+        conn.commit()
+        cursor.close()
+        print("229")
+
+        if len(records) == config['max_batch_size']:
+            print("Max batch size reached, queue again")
+            sqs_msg = [{'Id':f"{sim_id}",'MessageBody':f"{sim_id}", 'MessageGroupId':"group", 'MessageDeduplicationId':uuid.uuid4().hex.upper()}]
+            sqs.send_message_batch(QueueUrl='https://sqs.ap-southeast-1.amazonaws.com/917786932753/simulation-queue.fifo', Entries=sqs_msg)
         else:
-            # you have run out of money!
-            pass
-        
-    results[['fund1','fund2']] = results[['fund1','fund2']].ffill()
-    results['total_value'] = results['fund1'] + results['fund2'] / results['close']
-    results['actual_action'] = results['actual_action'].fillna('none')
-    records = results.reset_index()[['open_time', 'execute_price', 'actual_action', 'fund1', 'fund2', 'total_value']]
-    records = records.rename(columns={'actual_action':'trade_action'})
-    records['simulation_id'] = sim_id
-    execute_values(conn, records, 'simulation_record')
-
-    cursor = conn.cursor()
-    info_dict = {k:v for k,v in config.items() if k not in config_keys}
-    cursor.execute(f"update simulation set info_dict='{json.dumps(info_dict)}' where id={config['simulation_id']}")
-    conn.commit()
-    cursor.close()
-
-    if len(records) == config['max_batch_size']:
-        print("Max batch size reached, queue again")
-        sqs_msg = [{'Id':f"{sim_id}",'MessageBody':f"{sim_id}", 'MessageGroupId':"group", 'MessageDeduplicationId':uuid.uuid4().hex.upper()}]
-        sqs.send_message_batch(QueueUrl='https://sqs.ap-southeast-1.amazonaws.com/917786932753/simulation-queue.fifo', Entries=sqs_msg)
-    else:
-        print("Latest processed")
+            print("Latest processed")
+        print("237")
 
 
-    print(f"Simulation ID to run: {sim_id}")
-    return {
-        'statusCode': 200,
-        'body': json.dumps({})
-    }
+        print(f"Simulation ID to run: {sim_id}")
+        return {
+            'statusCode': 200,
+            'body': json.dumps({})
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': f'failed with error: {e}'
+        }
