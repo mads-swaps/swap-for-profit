@@ -136,7 +136,7 @@ def queue_for_pairs(pairs_list):
     print(pairs_list)
     if len(pairs_list) > 0:
         pairs_str = ",".join([str(s) for s in pairs_list])
-        sql = f"""select s.id from environment e join simulation s on s.environment_id=e.id where pair_id in ({pairs_str})"""
+        sql = f"""select s.id from environment e join simulation s on s.environment_id=e.id where pair_id in ({pairs_str}) and s.active = true"""
         print(sql)
         cur = conn.cursor()
         cur.execute(sql)
