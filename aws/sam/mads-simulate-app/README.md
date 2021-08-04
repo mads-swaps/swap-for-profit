@@ -1,10 +1,9 @@
 # mads-simulate-app
 
-This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
+Model files are loaded from EFS.  To put files in EFS, first upload to S3 `model-assets-auto-sync` bucket, then run the `S3 to EFS model asset sync` task in AWS DataSync.
 
-- hello_world - Code for the application's Lambda function and Project Dockerfile.
-- events - Invocation events that you can use to invoke the function.
-- tests - Unit tests for the application code. 
-- template.yaml - A template that defines the application's AWS resources.
+Should be able to put stuff in EFS directly without having to reload the Lambda docker image, as the controls are now done via DB configuration and loaded dynamically from EFS.
 
-The application uses several AWS resources, including Lambda functions and an API Gateway API. These resources are defined in the `template.yaml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
+Simulations are configured directly in the database.
+
+Create relevant Strategy and Environment entries, then create the Simulation entry.
