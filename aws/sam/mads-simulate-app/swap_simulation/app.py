@@ -103,7 +103,9 @@ order by
         extra_df = df.copy()
         extra_df['is_extra'] = ~(extra_df['candle_open_time'] >= start_time)
         extra_df = extra_df.set_index('candle_open_time').sort_index()
-        
+    
+    df = df.copy() # defrag dataframe
+    
     df = df[df['candle_open_time'] >= start_time]
     df = df.set_index('candle_open_time').sort_index()
 
