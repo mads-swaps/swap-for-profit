@@ -3,3 +3,4 @@ aws-psycopg2
 pandas
 pytz
 sklearn
+pytorch

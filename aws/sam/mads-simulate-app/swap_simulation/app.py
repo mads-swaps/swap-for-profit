@@ -24,7 +24,7 @@ asset_prefix = '/mnt/model_assets/'
 import sys
 sys.path.insert(1, asset_prefix)
 import trade_models
-print("AWS Import complete")
+print("Import complete")
 
 # if pgpass == "":
 #     # I guess this is a good place to put AWS specific variables
@@ -104,11 +104,11 @@ order by
         extra_df['is_extra'] = ~(extra_df['candle_open_time'] >= start_time)
         extra_df = extra_df.set_index('candle_open_time').sort_index()
     
-    df = df.copy() # defrag dataframe
-    
     df = df[df['candle_open_time'] >= start_time]
     df = df.set_index('candle_open_time').sort_index()
 
+    df = df.copy() # defrag dataframe
+    
     ref_df = base_df[['open_time','open', 'high', 'low', 'close']].copy()
     ref_df = ref_df[ref_df['open_time'] >= start_time]
     ref_df = ref_df.set_index('open_time').sort_index()
@@ -191,17 +191,18 @@ def lambda_handler(event, context):
 
         model = trade_models.__dict__[config['model']]
         columns = model.columns(config)
-
         print("Current batch: ", current_batch_start_time)
 
         batch_data, results, extra_data, batch_close_time = get_batch_data(config['pair_id'], current_batch_start_time, columns, config['max_batch_size'], config['extra_rows'])
 
+        print(f"Fetched Data: {len(batch_data)}")
         # Replace any boolean or object columns as int
         for col in batch_data.columns:
             if batch_data[col].dtype.kind in ['b','O']:
                 batch_data[col] = batch_data[col].astype(int)
 
         batch_model_decision, batch_execute_price = model.make_decision(batch_data[columns], extra_data, config)
+        print(f"Made Decision: {len(batch_model_decision)}")
 
         results['trade_model_decision'] = batch_model_decision.values
         results['execute_price'] = batch_execute_price.values
@@ -210,7 +211,7 @@ def lambda_handler(event, context):
         results.iloc[0, results.columns.get_loc('fund1')] = cur_funds[0]
         results.iloc[0, results.columns.get_loc('fund2')] = cur_funds[1]
 
-        # print("...Simulating actions...")
+        print("...Simulating actions...")
         for x,r in results.iterrows():
             if cur_funds[0] > 0 and cur_funds[1] == 0:
                 if r['trade_model_decision'] > 0:
