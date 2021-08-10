@@ -1,0 +1,8 @@
+{
+    "BinanceCrawlerFunction": {
+        "PGDBNAME": "",
+        "PGHOST": "",
+        "PGUSER": "",
+        "PGPASSLOCAL": ""
+    }
+}

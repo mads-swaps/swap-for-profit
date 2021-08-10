@@ -2,6 +2,7 @@ import json
 import urllib3
 import boto3
 import os
+import uuid
 import psycopg2
 
 http = urllib3.PoolManager()
@@ -17,6 +18,9 @@ if pgpass == "":
     pgpass = parameter['Parameter']['Value']
 
 conn = psycopg2.connect(host=pghost, database=pgdb, user=pguser, password=pgpass, connect_timeout=3)
+
+sqs = boto3.client('sqs', region_name='ap-southeast-1')
+
 
 def get_latest_epoch():
     sql = """
@@ -97,7 +101,7 @@ set
     taker_buy_base_asset_volume = excluded.taker_buy_base_asset_volume,
     taker_buy_quote_asset_volume = excluded.taker_buy_quote_asset_volume;
 """
-    print(query_values)
+    # print(query_values)
     cur = conn.cursor()
     cur.execute(sql)
 
@@ -120,7 +124,7 @@ set
     taker_buy_base_asset_volume = excluded.taker_buy_base_asset_volume,
     taker_buy_quote_asset_volume = excluded.taker_buy_quote_asset_volume;
 """
-    print(query_values)
+    # print(query_values)
     cur.execute(sql)
 
     conn.commit()
@@ -128,11 +132,32 @@ set
     cur.close()
     return query_values,row_count
 
+def queue_for_pairs(pairs_list):
+    print(pairs_list)
+    if len(pairs_list) > 0:
+        pairs_str = ",".join([str(s) for s in pairs_list])
+        sql = f"""select s.id from environment e join simulation s on s.environment_id=e.id where pair_id in ({pairs_str}) and s.active = true"""
+        print(sql)
+        cur = conn.cursor()
+        cur.execute(sql)
+        r = cur.fetchall()
+        cur.close()
+
+        sqs_messages = [{'Id':f"{row[0]}",'MessageBody':f"{row[0]}", 'MessageGroupId':"group", 'MessageDeduplicationId':uuid.uuid4().hex.upper()} for row in r]
+        n = 10
+        sqs_batches = [sqs_messages[i * n:(i + 1) * n] for i in range((len(sqs_messages) + n - 1) // n )]
+        for sqs_batch in sqs_batches:
+            print(sqs_batch)
+            sqs.send_message_batch(QueueUrl='https://sqs.ap-southeast-1.amazonaws.com/917786932753/simulation-queue.fifo', Entries=sqs_batch)
+
 def lambda_handler(event, context):
     next_fetch = get_latest_epoch()
     
     crawl_records = {r[0]:crawl_data(r[1],r[2]) for r in next_fetch}
     query_values,row_count = insert_data(crawl_records)
+
+    queue_for_pairs([pid for pid,rows in crawl_records.items() if len(rows) > 1])
+    
     return {
         'statusCode': 200,
         'body': json.dumps({"row_count":row_count, "query_values":query_values})

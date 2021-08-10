@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  python3.8
+
+  Sample SAM Template for mads-simulate-app
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 300
+
+Parameters:
+  PGDBNAME:
+    Type: String
+    Description: Postgres DB name
+  PGHOST:
+    Type: String
+    Description: Postgres host
+  PGUSER:
+    Type: String
+    Description: Postgres user name
+  PGPASSLOCAL:
+    Type: String
+    Description: Postgres password for local invoke
+Resources:
+  SwapSimulationFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      PackageType: Image
+      Environment:
+        Variables:
+          PGDBNAME: !Ref PGDBNAME
+          PGHOST: !Ref PGHOST
+          PGUSER: !Ref PGUSER
+          PGPASSLOCAL: !Ref PGPASSLOCAL
+    Metadata:
+      Dockerfile: Dockerfile
+      DockerContext: ./swap_simulation
+      DockerTag: python3.8-v1
+    VpcConfig:
+      SecurityGroupIds:
+        - sg-dfdc6b93
+      SubnetIds:
+        - subnet-060b4cdd011c24c50
+        - subnet-048ac16788143d19a
+Outputs:
+  SwapSimulationFunction:
+    Description: "Simulation Lambda Function ARN"
+    Value: !GetAtt SwapSimulationFunction.Arn

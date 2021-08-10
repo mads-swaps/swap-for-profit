@@ -117,3 +117,30 @@ class ResNet28(nn.Module):
         #out = self.output(out)
 
         return out
+
+class NNModelEx(nn.Module):
+    def __init__(self, input_size, output_size, **kwargs):
+        super().__init__()
+
+        network = []
+        p = input_size
+        for k,v in kwargs.items():
+            if k.startswith('l'):
+                network.append(nn.Linear(in_features=p, out_features=v))
+                p=v
+            elif k.startswith('d'):
+                network.append(nn.Dropout(v))
+            elif k.startswith('t'):
+                network.append(nn.Tanh())
+            elif k.startswith('s'):
+                network.append(nn.Sigmoid())
+            elif k.startswith('r'):
+                network.append(nn.ReLU())
+
+        network.append(nn.Linear(in_features=p, out_features=output_size))
+        #network.append(nn.ReLU())
+
+        self.net = nn.Sequential(*network)
+
+    def forward(self, X):
+        return self.net(X)
