@@ -133,6 +133,7 @@ set
     return query_values,row_count
 
 def queue_for_pairs(pairs_list):
+    pairs_list = pairs_list + [p*-1-1 for p in pairs_list]
     print(pairs_list)
     if len(pairs_list) > 0:
         pairs_str = ",".join([str(s) for s in pairs_list])

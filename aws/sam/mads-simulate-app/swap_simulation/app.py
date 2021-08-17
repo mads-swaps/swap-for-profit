@@ -24,6 +24,8 @@ asset_prefix = '/mnt/model_assets/'
 import sys
 sys.path.insert(1, asset_prefix)
 import trade_models
+from trade_models import *
+
 print("Import complete")
 
 # if pgpass == "":
