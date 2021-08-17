@@ -3,7 +3,6 @@ import pandas as pd
 import re
 import pickle
 import torch
-from tqdm.notebook import tqdm
 from .n1_torch1_dataset import Dataset, to_device
 from .n1_torch1_model import ResNet28
 from sklearn.preprocessing import StandardScaler
@@ -131,7 +130,7 @@ def predict(model, X, y=None, device='cpu', silent=False):
         num_outputs = len(y.columns)
         num_batches = len(predictLoader)
         predictions = torch.zeros(num_elements, num_outputs)
-        for i, (inputs, _) in tqdm(enumerate(predictLoader), total=num_batches, disable=silent):
+        for i, (inputs, _) in enumerate(predictLoader):
             inputs = to_device(inputs, pyt_device)
             start = i*batch_size
             end = start + batch_size
