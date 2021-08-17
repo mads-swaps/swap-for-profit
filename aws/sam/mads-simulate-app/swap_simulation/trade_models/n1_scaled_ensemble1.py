@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import re
 import pickle
-from .n1_scaled1 import CustomScaler1
     
+
 def columns(portfolio):
     lookback_days = portfolio.get('model_lookback_days',0)
 
