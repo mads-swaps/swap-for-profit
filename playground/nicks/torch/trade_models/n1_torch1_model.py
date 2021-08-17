@@ -2,14 +2,7 @@ import torch
 import torch.nn as nn
 from collections import OrderedDict
 
-# Based on the following
-# Chen, D.; Hu, F.; Nian, G.; Yang, T. Deep Residual Learning for Nonlinear Regression. Entropy 2020, 22, 193.
-# https://github.com/DowellChan/ResNetRegression/blob/master/ResNetOptimalModel.py
-# DeepLearnPhysics: PyTorch 5-particle Classifier Example
-# https://github.com/DeepLearnPhysics/pytorch-resnet-example/blob/master/resnet_example.py
-# Residual Networks: Zuppichini
-# https://towardsdatascience.com/residual-network-implementing-resnet-a7da63c7b278
-# https://github.com/FrancescoSaverioZuppichini/ResNet
+
 class ResnetDenseBlock(nn.Module):
     def __init__(self, input_size, width):
         super(ResnetDenseBlock, self).__init__()
