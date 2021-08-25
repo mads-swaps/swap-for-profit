@@ -18,6 +18,11 @@ Visit the `fetch_data` folder for a notebook used to prototype the collection of
 
 Playround contains the source code for each team member that was used to complete the writeup.  This section also contains the different strategies that were explored.
 
+
+### Sample
+
+This folder contains sample code how to connect to the AWS Postgres database.  It requires the `hidden-dist.py` to be copied and renamed to `hidden.py` and credentials to be filled in.
+
 ### Zipline
 
 Visit the `zipline` folder to review how the zipline package was explored and some of the evaluation metrics that were used.
