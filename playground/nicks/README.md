@@ -3,6 +3,9 @@
 This is where I experimented with different approaches to attack the cryptocurrency problem and where I came up with the Target and Stop Loss approach.  While this area is a bit of a mess, the target and stop loss approach has been organized into a pipeline of notebooks which I will discuss here.  I won't necessarily discuss all notebooks here since there use was fleeting but were necessary in the understanding and development of the final pipeline.
 
 
+A lot of the initial prototyping was performed in the notebook `plotting_mpf_and_features.ipynb`.  The feature engineering in particular was converted to Postgres stored procedures to run off of triggers from new data available from the Binance API.
+
+
 ## Basic Models
 
 ### Step 0 - Getting Data
